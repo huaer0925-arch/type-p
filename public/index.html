@@ -85,25 +85,25 @@
   <script src="js/firebase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
-    // ★ 로그인 페이지 진입 시:
-    // 1) 플래그 초기화 (이전 세션 무효화)
-    // 2) Firebase 세션 강제 종료
+    // ① 이전 fresh 플래그 초기화
     Auth.clearFreshLogin();
-    auth.signOut().then(() => {
-      Auth.initAuthListener({
-        onLogin: async (user, isAdmin) => {
-          // ★ 정상 로그인 완료 → 플래그 세팅
-          Auth.markFreshLogin();
-          const hasProfile = await Auth.checkProfile(user.uid);
-          if (!hasProfile) {
-            window.location.href = '/profile.html';
-          } else {
-            window.location.href = '/app.html';
-          }
-        }
-      });
+
+    let _signingOut = true; // signOut 중에는 onLogin 무시
+
+    // ② 리스너 먼저 등록
+    Auth.initAuthListener({
+      onLogin: async (user) => {
+        if (_signingOut) return;          // signOut 처리 중이면 무시
+        Auth.markFreshLogin();
+        const hasProfile = await Auth.checkProfile(user.uid);
+        window.location.href = hasProfile ? '/app.html' : '/profile.html';
+      }
     });
 
+    // ③ 기존 Firebase 세션 강제 종료
+    auth.signOut().then(() => { _signingOut = false; });
+
+    // ④ 로그인 버튼
     document.getElementById('btn-google-login').addEventListener('click', async () => {
       const btn = document.getElementById('btn-google-login');
       btn.disabled = true;

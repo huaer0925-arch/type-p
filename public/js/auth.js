@@ -1,72 +1,58 @@
 // 인증 모듈 - Google 로그인 및 사용자 라우팅
 const Auth = (() => {
     const provider = new firebase.auth.GoogleAuthProvider();
-    // 공용 PC 대비: 매번 비밀번호 입력 강제 (다른 계정으로 장난 방지)
-    provider.setCustomParameters({ prompt: 'login' });
+    // 매번 계정 선택 팝업 표시 (prompt:'login'은 재로그인 시 팝업이 막히는 문제 있음)
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    // 공용 PC 대비: 로그인 페이지를 정상 경유했는지 추적
+    const FRESH_KEY = 'gtp_fresh';
 
     // Google 로그인
     async function signIn() {
         try {
             await auth.signInWithPopup(provider);
         } catch (e) {
+            if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
             console.error('로그인 오류:', e);
             alert('로그인 중 오류가 발생했습니다. 다시 시도해 주세요.');
         }
     }
 
-    // 로그아웃
+    // 로그아웃 (플래그 초기화 후 index.html로 이동)
     async function signOut() {
+        sessionStorage.removeItem(FRESH_KEY);
         await auth.signOut();
         window.location.href = '/index.html';
     }
 
-    // 하드코딩 관리자 이메일 목록 (로그인 없이도 즉시 적용)
-    const ADMIN_EMAILS = [
-        'kdevelop1592@gmail.com',
-    ];
+    // 관리자 이메일 하드코딩
+    const ADMIN_EMAILS = ['kdevelop1592@gmail.com'];
 
-    // 관리자 여부 확인 (이메일 하드코딩 우선, Firestore admins 컬렉션 병행)
+    // 관리자 여부 확인
     async function isAdmin(uid) {
-        // 현재 로그인한 유저의 이메일로 먼저 체크
-        const currentUser = auth.currentUser;
-        if (currentUser && ADMIN_EMAILS.includes(currentUser.email)) {
-            return true;
-        }
-        // Firestore admins 컬렉션 체크 (fallback)
+        const u = auth.currentUser;
+        if (u && ADMIN_EMAILS.includes(u.email)) return true;
         try {
             const snap = await db.collection('admins').doc(uid).get();
             return snap.exists;
-        } catch {
-            return false;
-        }
+        } catch { return false; }
     }
 
     // 신규 사용자 여부 확인
     async function checkProfile(uid) {
         const snap = await db.collection('users').doc(uid).get();
-        if (!snap.exists || !snap.data().profileComplete) {
-            return false;
-        }
-        return true;
+        return snap.exists && snap.data().profileComplete === true;
     }
 
-    // 로그인 페이지를 정상적으로 거쳤는지 추적하는 플래그 키
-    const FRESH_KEY = 'gtp_fresh';
-
-    // 인증 상태 변화 감지 및 페이지 라우팅
+    // 인증 상태 감지 및 라우팅
     function initAuthListener(options = {}) {
-        const {
-            onLogin,
-            onLogout,
-            requireAuth = false,
-            requireAdmin = false,
-        } = options;
+        const { onLogin, onLogout, requireAuth = false, requireAdmin = false } = options;
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // requireAuth 페이지(app, admin, myrecords 등)에서
-                // 로그인 페이지를 거치지 않고 Firebase 세션으로 접근한 경우 강제 로그아웃
+                // requireAuth 페이지에서 fresh 로그인 플래그가 없으면 강제 로그아웃
                 if (requireAuth && sessionStorage.getItem(FRESH_KEY) !== '1') {
+                    sessionStorage.removeItem(FRESH_KEY);
                     await auth.signOut();
                     window.location.href = '/index.html';
                     return;
@@ -91,15 +77,11 @@ const Auth = (() => {
         });
     }
 
-    // 로그인 성공 플래그 세팅 (index.html에서 호출)
-    function markFreshLogin() {
-        sessionStorage.setItem(FRESH_KEY, '1');
-    }
+    // 로그인 성공 플래그 세팅
+    function markFreshLogin() { sessionStorage.setItem(FRESH_KEY, '1'); }
 
-    // 로그인 플래그 초기화 (index.html 접근 시 호출)
-    function clearFreshLogin() {
-        sessionStorage.removeItem(FRESH_KEY);
-    }
+    // 로그인 플래그 초기화
+    function clearFreshLogin() { sessionStorage.removeItem(FRESH_KEY); }
 
     return { signIn, signOut, isAdmin, checkProfile, initAuthListener, markFreshLogin, clearFreshLogin };
 })();
