@@ -1,6 +1,8 @@
 // 인증 모듈 - Google 로그인 및 사용자 라우팅
 const Auth = (() => {
     const provider = new firebase.auth.GoogleAuthProvider();
+    // 공용 PC 대비: 매번 계정 선택 팝업 강제 표시
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     // Google 로그인
     async function signIn() {
