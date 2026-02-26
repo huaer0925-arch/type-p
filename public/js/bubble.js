@@ -761,16 +761,25 @@ const BubbleGame = (() => {
         // 단어 텍스트
         ctx.save();
         ctx.globalAlpha = alpha;
-        const displayWord = isSpecial ? '★' + (word.length > 4 ? word.slice(0, 3) + '…' : word) : word;
-        const fs = displayWord.length > 5 ? 9 : displayWord.length > 3 ? 11 : 13;
+
+        // 별 모양 추가 시 글자 잘림 현상 방지를 위해 전체 단어 유지
+        const displayWord = isSpecial ? '★' + word : word;
+
+        // 글자 수에 따라 폰트 크기를 유동적으로 조절
+        let fs = 13;
+        if (displayWord.length > 7) fs = 8.5;
+        else if (displayWord.length > 5) fs = 10;
+        else if (displayWord.length > 3) fs = 11.5;
+
         ctx.font = `bold ${fs}px 'Pretendard', 'Apple SD Gothic Neo', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = isSpecial ? '#fff' : '#ffffff';
         ctx.shadowColor = isSpecial ? rainbowColor : 'rgba(0,0,0,0.9)';
         ctx.shadowBlur = isSpecial ? 8 : 5;
-        const display = displayWord.length > 7 ? displayWord.slice(0, 6) + '…' : displayWord;
-        ctx.fillText(display, x, y);
+
+        // 텍스트 전체 출력 (말줄임표 제거)
+        ctx.fillText(displayWord, x, y);
         ctx.restore();
     }
 
