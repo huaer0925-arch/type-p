@@ -269,8 +269,58 @@ const BubbleGame = (() => {
         // totalDrops를 반영해 실제 화면 홀짝 패리티 결정
         const visualParity = (atRow + totalDrops) % 2;
         const cols = COLS - (visualParity === 1 ? 1 : 0);
+
+        // 새로 생성할 버블의 열(col) 인덱스들
+        const newCols = [];
         for (let c = 0; c < cols; c++) {
-            if (Math.random() > FILL_PROB) continue;
+            if (Math.random() <= FILL_PROB) {
+                newCols.push(c);
+            }
+        }
+
+        // 새 행이 기존 거품들과 연결되지 않아 통째로 떨어지는 현상 방지:
+        // 만약 기존에 살아있는 행(atRow + 1)이 있다면, 적어도 하나는 맞닿아야 함
+        const childRow = atRow + 1;
+        const children = bubbles.filter(b => b.alive && b.row === childRow);
+
+        if (children.length > 0) {
+            let hasConnection = false;
+            for (const c of newCols) {
+                const x = BUBBLE_R + c * BUBBLE_R * 2 + (visualParity === 1 ? BUBBLE_R : 0);
+                const y = hexY(atRow);
+                // 연결 확인
+                for (const child of children) {
+                    if (Math.hypot(child.x - x, child.y - y) < BUBBLE_R * 2.2) {
+                        hasConnection = true;
+                        break;
+                    }
+                }
+                if (hasConnection) break;
+            }
+
+            // 연결된 게 하나도 없다면 강제로 하나 연결되도록 추가
+            if (!hasConnection) {
+                const randomChild = children[Math.floor(Math.random() * children.length)];
+                // 부모 행에서의 유효한 col 값 중 하나를 선택 (가장 가까운 X 좌표)
+                let bestCol = 0;
+                let minDist = Infinity;
+                for (let c = 0; c < cols; c++) {
+                    const x = BUBBLE_R + c * BUBBLE_R * 2 + (visualParity === 1 ? BUBBLE_R : 0);
+                    const y = hexY(atRow);
+                    const dist = Math.hypot(randomChild.x - x, randomChild.y - y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        bestCol = c;
+                    }
+                }
+                if (!newCols.includes(bestCol)) {
+                    newCols.push(bestCol);
+                }
+            }
+        }
+
+        // 확정된 newCols를 기반으로 실제 버블 스폰
+        for (const c of newCols) {
             const isSpecial = Math.random() < specialProb;
             const color = isSpecial ? '#FFFFFF' : COLORS[Math.floor(Math.random() * COLORS.length)];
             const word = nextWord();
