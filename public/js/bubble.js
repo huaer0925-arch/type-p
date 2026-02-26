@@ -151,7 +151,17 @@ const BubbleGame = (() => {
         totalDrops = 0;
         gameRunning = true;
 
-        for (let r = 0; r < INIT_ROWS; r++) spawnRow(r);
+        // 위에서 추가된 "연결성 검증 방지(럭키샷 방지)" 코드는 
+        // 아랫줄(row + 1)을 기준으로 윗줄을 붙이도록 설계되어 있음.
+        // 처음 4줄(INIT_ROWS)을 한꺼번에 찍어낼 때는
+        // 반드시 '아랫줄'을 먼저 만들고 '윗줄'을 만들어야 함 (바텀업 스폰).
+        for (let r = INIT_ROWS - 1; r >= 0; r--) {
+            spawnRow(r);
+        }
+
+        // 초기화 시에 천장(row=0)에서 끊어진 거품 정리 (혹시 모를 예외 방지)
+        dropDetachedBubbles();
+
         startDrop();
         loop();
     }
