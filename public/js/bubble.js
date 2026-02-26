@@ -163,6 +163,22 @@ const BubbleGame = (() => {
     let lastWordWpm = 0;
     let maxWpm = 0;
 
+    // ── 타겟 선택 헬퍼 (스마트 조준) ─────────────────────────
+    function findBestTarget(word, prefixMatch = false) {
+        const sx = CANVAS_W / 2, sy = CANVAS_H - 28;
+        // 1. 조건에 맞는 모든 버블 찾기
+        const candidates = bubbles.filter(b => b.alive && (prefixMatch ? b.word.startsWith(word) : b.word === word));
+        if (candidates.length === 0) return null;
+
+        // 2. 경로가 뚫려있는(맞출 수 있는) 거품 필터링
+        const reachable = candidates.filter(b => findShotPath(sx, sy, b) !== null);
+        let bestList = reachable.length > 0 ? reachable : candidates;
+
+        // 3. 여러 개라면 가장 아래에 있는 버블(y값이 큰 것) 우선
+        bestList.sort((a, b) => b.y - a.y);
+        return bestList[0];
+    }
+
     // 발사 (단어 입력 완료 시 호출)
     function shoot(word) {
         if (!gameRunning || proj) return false;
@@ -170,7 +186,7 @@ const BubbleGame = (() => {
         const now = Date.now();
         if (startTime === 0) startTime = now;
 
-        const target = bubbles.find(b => b.alive && b.word === word);
+        const target = findBestTarget(word, false);
         if (!target) {
             combo = 0;
             notifyUpdate();
@@ -212,8 +228,13 @@ const BubbleGame = (() => {
     // 조준 (입력 중 실시간 호출)
     function aim(word) {
         if (!gameRunning) { aimTarget = null; aimPath = null; return; }
-        aimTarget = bubbles.find(b => b.alive && b.word === word)
-            || (word.length > 0 ? bubbles.find(b => b.alive && b.word.startsWith(word)) : null);
+
+        let target = findBestTarget(word, false);
+        if (!target && word.length > 0) {
+            target = findBestTarget(word, true);
+        }
+
+        aimTarget = target;
         const sx = CANVAS_W / 2, sy = CANVAS_H - 28;
         aimPath = aimTarget ? findShotPath(sx, sy, aimTarget) : null;
     }
@@ -311,44 +332,54 @@ const BubbleGame = (() => {
     function findShotPath(sx, sy, target) {
         const excl = new Set([target]);
 
-        // 1. 직선
-        if (isSegmentClear(sx, sy, target.x, target.y, excl)) {
-            const d = Math.hypot(target.x - sx, target.y - sy);
-            return {
-                vx: (target.x - sx) / d * PROJ_SPEED,
-                vy: (target.y - sy) / d * PROJ_SPEED, bouncePoint: null
-            };
+        // 중심뿐만 아니라 좌우 뺨(offset)을 노려 장애물을 피하는 궤적 탐색
+        const offsets = [0, -12, 12, -24, 24, -36, 36, -46, 46];
+
+        for (const offX of offsets) {
+            const fakeTx = target.x + offX;
+            const fakeTy = target.y;
+
+            // 1. 직선
+            if (isSegmentClear(sx, sy, fakeTx, fakeTy, excl)) {
+                const d = Math.hypot(fakeTx - sx, fakeTy - sy);
+                return {
+                    vx: (fakeTx - sx) / d * PROJ_SPEED,
+                    vy: (fakeTy - sy) / d * PROJ_SPEED, bouncePoint: null
+                };
+            }
+
+            // 벽 반사 시도 헬퍼 — 1구간 + 2구간 모두 통과해야 반환
+            function tryWall(wallX) {
+                const rtx = 2 * wallX - fakeTx;
+                const d = Math.hypot(rtx - sx, fakeTy - sy);
+                if (d === 0) return null;
+                const bpY = sy + (wallX - sx) / (rtx - sx) * (fakeTy - sy);
+                if (bpY <= -BUBBLE_R || bpY >= sy) return null;
+                // 1구간: 포신 → 반사점
+                if (!isSegmentClear(sx, sy, wallX, bpY, excl)) return null;
+                // 2구간: 반사점 → 타겟 (실제로 맞출 수 있는지 확인)
+                if (!isSegmentClear(wallX, bpY, fakeTx, fakeTy, excl)) return null;
+                return {
+                    vx: (rtx - sx) / d * PROJ_SPEED,
+                    vy: (fakeTy - sy) / d * PROJ_SPEED,
+                    bouncePoint: { x: wallX, y: bpY }
+                };
+            }
+
+            const wallL = BUBBLE_R;
+            const wallR = CANVAS_W - BUBBLE_R;
+
+            let bounce = null;
+            // 타겟 위치에 따라 반대 벽 우선
+            if (fakeTx < sx) {
+                bounce = tryWall(wallR) ?? tryWall(wallL) ?? null;
+            } else {
+                bounce = tryWall(wallL) ?? tryWall(wallR) ?? null;
+            }
+            if (bounce) return bounce;
         }
 
-        // 벽 반사 시도 헬퍼 — 1구간 + 2구간 모두 통과해야 반환
-        function tryWall(wallX) {
-            const rtx = 2 * wallX - target.x;
-            const d = Math.hypot(rtx - sx, target.y - sy);
-            if (d === 0) return null;
-            const bpY = sy + (wallX - sx) / (rtx - sx) * (target.y - sy);
-            if (bpY <= -BUBBLE_R || bpY >= sy) return null;
-            // 1구간: 포신 → 반사점
-            if (!isSegmentClear(sx, sy, wallX, bpY, excl)) return null;
-            // 2구간: 반사점 → 타겟 (실제로 맞출 수 있는지 확인)
-            if (!isSegmentClear(wallX, bpY, target.x, target.y, excl)) return null;
-            return {
-                vx: (rtx - sx) / d * PROJ_SPEED,
-                vy: (target.y - sy) / d * PROJ_SPEED,
-                bouncePoint: { x: wallX, y: bpY }
-            };
-        }
-
-        const wallL = BUBBLE_R;
-        const wallR = CANVAS_W - BUBBLE_R;
-
-        // 2. 타겟 위치에 따라 반대 벽 우선
-        //    왼쪽 타겟 → 우측 벽 반사 우선 (반대 방향에서 돌아오는 경로)
-        //    오른쪽 타겟 → 좌측 벽 반사 우선
-        if (target.x < sx) {
-            return tryWall(wallR) ?? tryWall(wallL) ?? null;
-        } else {
-            return tryWall(wallL) ?? tryWall(wallR) ?? null;
-        }
+        return null;
     }
 
     // ── 충돌 판정 ─────────────────────────────────────────────
