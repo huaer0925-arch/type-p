@@ -160,7 +160,7 @@
         // 게임 내부 로직(480×560)은 그대로, CSS scale로 시각적 크기만 조정
         const CANVAS_BASE_W = 480;
         const CANVAS_BASE_H = 560;
-        const SIDE_PANEL_W = 220;  // 사이드 패널 너비
+        const SIDE_PANEL_W = 260;  // 사이드 패널 너비
         const GAME_GAP = 20;        // flex gap
 
         function resizeBubbleCanvas() {
@@ -380,6 +380,13 @@
                 }).join('');
                 const tableHtml = rows.length
                     ? `<table class="bubble-ranking-table">
+                        <colgroup>
+                            <col style="width: 12%;">
+                            <col style="width: 28%;">
+                            <col style="width: 16%;">
+                            <col style="width: 24%;">
+                            <col style="width: 20%;">
+                        </colgroup>
                         <thead><tr><th>#</th><th>이름</th><th>반</th><th>점수</th><th>레벨</th></tr></thead>
                         <tbody>${rows}</tbody>
                        </table>`

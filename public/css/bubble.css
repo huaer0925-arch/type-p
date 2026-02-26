@@ -34,7 +34,7 @@
 
 /* 사이드 패널 */
 #bubble-side-panel {
-    width: 220px;
+    width: 260px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -169,21 +169,26 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.82rem;
+    table-layout: fixed;
 }
 
 .bubble-ranking-table th {
     color: var(--text-muted);
     font-size: 0.72rem;
     text-transform: uppercase;
-    padding: 4px 6px;
+    padding: 4px;
     text-align: left;
     border-bottom: 1px solid var(--border);
+    white-space: nowrap;
 }
 
 .bubble-ranking-table td {
-    padding: 6px 6px;
+    padding: 6px 4px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .bubble-ranking-table tr:first-child td {
