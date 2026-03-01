@@ -107,43 +107,45 @@ const KeyboardDisplay = (() => {
             el.appendChild(rowEl);
         });
 
-        // 손가락 오버레이 영역 추가
+        // 손가락 오버레이 영역 추가 (keyboard.css의 구조와 일치시킴)
         const hands = document.createElement('div');
         hands.className = 'hand-overlay';
+
         hands.innerHTML = `
             <div class="hand left-hand">
-                <div class="finger f-lp" id="f-lp"></div>
-                <div class="finger f-lr" id="f-lr"></div>
-                <div class="finger f-lm" id="f-lm"></div>
-                <div class="finger f-li" id="f-li"></div>
-                <div class="finger f-lt" id="f-lt"></div>
+                <div class="palm"></div>
+                <div class="fingers">
+                    <div class="finger f-lp" id="f-lp"></div>
+                    <div class="finger f-lr" id="f-lr"></div>
+                    <div class="finger f-lm" id="f-lm"></div>
+                    <div class="finger f-li" id="f-li"></div>
+                    <div class="finger f-lt" id="f-lt"></div>
+                </div>
             </div>
             <div class="hand right-hand">
-                <div class="finger f-rt" id="f-rt"></div>
-                <div class="finger f-ri" id="f-ri"></div>
-                <div class="finger f-rm" id="f-rm"></div>
-                <div class="finger f-rr" id="f-rr"></div>
-                <div class="finger f-rp" id="f-rp"></div>
+                <div class="palm"></div>
+                <div class="fingers">
+                    <div class="finger f-rt" id="f-rt"></div>
+                    <div class="finger f-ri" id="f-ri"></div>
+                    <div class="finger f-rm" id="f-rm"></div>
+                    <div class="finger f-rr" id="f-rr"></div>
+                    <div class="finger f-rp" id="f-rp"></div>
+                </div>
             </div>
         `;
         el.appendChild(hands);
 
-        // 커스텀 위치 적용 (절대 좌표 모드)
+        // 커스텀 위치 적용 (상대적 오프셋 모드)
         if (options.customPositions) {
-            hands.style.position = 'static'; // 부모 grid/flex 영향 제거
             const fingers = el.querySelectorAll('.finger');
             fingers.forEach(fel => {
                 const pos = options.customPositions[fel.id];
-                if (pos) {
-                    fel.style.position = 'absolute';
-                    fel.style.left = '50%';
-                    fel.style.bottom = '8px';
-                    // 기준점에서 이동 (기존 CSS margin/gap 무시를 위해 transform 사용 권장이나 x,y가 픽셀이면 margin-left/bottom도 가능)
-                    // 여기서는 유연성을 위해 transform: translate() 사용
-                    fel.style.transform = `translate(calc(-50% + ${pos.x}px), ${-pos.y}px)`;
-                    // 기본 transform이 있는 엄지손가락 등 예외 처리는 pressKey 등에서 고려됨
-                    if (fel.id === 'f-lt') fel.style.transform += ' rotate(-25deg)';
-                    if (fel.id === 'f-rt') fel.style.transform += ' rotate(25deg)';
+                if (pos && (pos.x !== 0 || pos.y !== 0)) {
+                    // 자연스러운 flex 위치에서 translate로 이동
+                    let transform = `translate(${pos.x}px, ${-pos.y}px)`;
+                    if (fel.id === 'f-lt') transform += ' rotate(70deg)';
+                    if (fel.id === 'f-rt') transform += ' rotate(-70deg)';
+                    fel.style.transform = transform;
                 }
             });
         }

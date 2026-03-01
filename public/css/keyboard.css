@@ -135,6 +135,7 @@
     position: relative;
     z-index: 1;
     padding-bottom: 75px;
+    min-height: 120px;
 }
 
 .finger {

@@ -6,226 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>경덕중학교 타자마스터 — 연습</title>
     <meta name="description" content="한글/영문 타자 연습 — 자리연습, 단어, 문장, 문단 모드">
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/typing.css">
+    <link rel="stylesheet" href="css/main.css?v=1.2.4">
+    <link rel="stylesheet" href="css/typing.css?v=1.2.4">
+    <link rel="stylesheet" href="css/keyboard.css?v=1.2.4">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <style>
-        /* ── 화면 키보드 스타일 ── */
-        .keyboard-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding: 16px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            user-select: none;
-        }
-
-        .kb-row {
-            display: flex;
-            gap: 5px;
-            justify-content: center;
-        }
-
-        .kb-key {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 36px;
-            height: 36px;
-            padding: 0 6px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-bottom: 3px solid rgba(0, 0, 0, 0.4);
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            transition: all 0.1s ease;
-            cursor: default;
-        }
-
-        .key-wide {
-            min-width: 56px;
-        }
-
-        .key-wider {
-            min-width: 76px;
-        }
-
-        .key-space {
-            min-width: 240px;
-        }
-
-        .key-correct {
-            background: rgba(0, 255, 136, 0.25) !important;
-            border-color: var(--accent-green) !important;
-            color: var(--accent-green) !important;
-            transform: translateY(2px);
-            border-bottom-width: 1px !important;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
-        }
-
-        .key-error {
-            background: rgba(255, 68, 68, 0.25) !important;
-            border-color: var(--accent-red) !important;
-            color: var(--accent-red) !important;
-            transform: translateY(2px);
-            border-bottom-width: 1px !important;
-            box-shadow: 0 0 10px rgba(255, 68, 68, 0.4);
-        }
-
-        .key-hint {
-            background: rgba(0, 212, 255, 0.2) !important;
-            border-color: var(--accent-cyan) !important;
-            color: var(--accent-cyan) !important;
-            box-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
-            animation: hintPulse 1s ease infinite;
-        }
-
-        @keyframes hintPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
-            }
-
-            50% {
-                box-shadow: 0 0 20px rgba(0, 212, 255, 0.9);
-            }
-        }
-
-        /* ── 손가락 오버레이 스타일 ── */
-        .hand-overlay {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 8px;
-            /* 키보드 하단에 걸치도록 */
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 20px;
-            pointer-events: none;
-            /* 클릭 방해 금지 */
-            opacity: 0.7;
-            z-index: 10;
-        }
-
-        .hand {
-            display: flex;
-            align-items: flex-end;
-            gap: 4px;
-            position: relative;
-        }
-
-        .finger {
-            width: 26px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 13px 13px 4px 4px;
-            transition: all 0.15s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        /* 손가락별 높이 조절 */
-        .f-lp,
-        .f-rp {
-            height: 45px;
-        }
-
-        /* 새끼 */
-        .f-lr,
-        .f-rr {
-            height: 60px;
-        }
-
-        /* 약지 */
-        .f-lm,
-        .f-rm {
-            height: 70px;
-        }
-
-        /* 중지 */
-        .f-li,
-        .f-ri {
-            height: 55px;
-        }
-
-        /* 검지 */
-
-        /* 엄지손가락 (Space용, 약간 꺾어줌) */
-        .f-lt {
-            height: 35px;
-            transform: rotate(-25deg);
-            transform-origin: bottom right;
-            margin-left: 14px;
-        }
-
-        .f-rt {
-            height: 35px;
-            transform: rotate(25deg);
-            transform-origin: bottom left;
-            margin-right: 14px;
-        }
-
-        /* 활성화 상태 (누를 때) */
-        .finger.active {
-            background: rgba(0, 212, 255, 0.6);
-            border-color: var(--accent-cyan);
-            box-shadow: 0 0 15px rgba(0, 212, 255, 0.8);
-            transform: translateY(4px);
-            /* 눌리는 느낌 */
-        }
-
-        .finger.active.f-lt {
-            transform: rotate(-25deg) translateY(4px);
-        }
-
-        .finger.active.f-rt {
-            transform: rotate(25deg) translateY(4px);
-        }
-
-        .finger.error {
-            background: rgba(255, 68, 68, 0.6);
-            border-color: var(--accent-red);
-            box-shadow: 0 0 15px rgba(255, 68, 68, 0.8);
-            transform: translateY(4px);
-        }
-
-        .finger.error.f-lt {
-            transform: rotate(-25deg) translateY(4px);
-        }
-
-        .finger.error.f-rt {
-            transform: rotate(25deg) translateY(4px);
-        }
-
-        /* 다음 쳐야 할 손가락 (힌트) */
-        .finger.hint {
-            border-color: var(--accent-green);
-            background: rgba(0, 255, 136, 0.3);
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
-            animation: fingerPulse 1s ease infinite;
-        }
-
-        @keyframes fingerPulse {
-
-            0%,
-            100% {
-                box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
-                border-color: rgba(0, 255, 136, 0.5);
-            }
-
-            50% {
-                box-shadow: 0 0 20px rgba(0, 255, 136, 0.9);
-                border-color: rgba(0, 255, 136, 1);
-            }
-        }
-    </style>
 </head>
 
 <body>
@@ -428,14 +214,14 @@
         </div>
     </div>
 
-    <script src="js/firebase-config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/profile.js"></script>
-    <script src="js/content.js"></script>
-    <script src="js/records.js"></script>
-    <script src="js/game.js"></script>
-    <script src="js/typing-engine.js"></script>
-    <script src="js/keyboard.js"></script>
+    <script src="js/firebase-config.js?v=1.2.4"></script>
+    <script src="js/auth.js?v=1.2.4"></script>
+    <script src="js/profile.js?v=1.2.4"></script>
+    <script src="js/content.js?v=1.2.4"></script>
+    <script src="js/records.js?v=1.2.4"></script>
+    <script src="js/game.js?v=1.2.4"></script>
+    <script src="js/typing-engine.js?v=1.2.4"></script>
+    <script src="js/keyboard.js?v=1.2.4"></script>
     <script>
         let currentUser = null;
         let userProfile = null;
