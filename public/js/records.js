@@ -122,14 +122,28 @@ const Records = (() => {
 
     // 랭킹/게임 설정 읽기
     async function getRankingSettings() {
-        const snap = await db.collection('settings').doc('ranking').get();
-        if (!snap.exists) return { classRankingEnabled: true, gradeRankingEnabled: true, specialBubbleProb: 0.07 };
-        return snap.data();
+        try {
+            // 캐시 대신 서버에서 최신 데이터 강제 로드
+            const snap = await db.collection('settings').doc('ranking').get({ source: 'server' });
+            if (!snap.exists) {
+                console.log('설정 문서 없음, 기본값 사용');
+                return { classRankingEnabled: true, gradeRankingEnabled: true, specialBubbleProb: 0.07 };
+            }
+            const data = snap.data();
+            console.log('설정 로드됨:', data);
+            return data;
+        } catch (e) {
+            console.error('설정 로드 실패(서버), 캐시 시도:', e);
+            const snap = await db.collection('settings').doc('ranking').get();
+            return snap.exists ? snap.data() : { classRankingEnabled: true, gradeRankingEnabled: true, specialBubbleProb: 0.07 };
+        }
     }
 
     // 랭킹/게임 설정 저장 (관리자 전용)
     async function setRankingSettings(settings) {
+        console.log('설정 저장 시도:', settings);
         await db.collection('settings').doc('ranking').set(settings, { merge: true });
+        console.log('설정 저장 완료');
     }
 
     return {
