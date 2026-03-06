@@ -28,7 +28,7 @@ const Auth = (() => {
     }
 
     // 관리자 이메일 하드코딩
-    const ADMIN_EMAILS = ['yuhoyuha97@gmail.com'];
+    const ADMIN_EMAILS = ['leeshouxuan@gmail.com'];
 
     // 관리자 여부 확인
     async function isAdmin(uid) {
