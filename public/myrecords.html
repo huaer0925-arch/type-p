@@ -76,10 +76,12 @@
                     <select id="chart-mode-filter" class="input-field" style="padding:8px 14px;width:auto"
                         onchange="updateChart()">
                         <option value="all">전체 모드</option>
-                        <option value="keyboard">자리연습</option>
+                        <option value="keyboard_basic">자리연습(기초)</option>
+                        <option value="keyboard_word">자리연습(단어)</option>
                         <option value="word">단어</option>
                         <option value="sentence">문장</option>
                         <option value="paragraph">문단</option>
+                        <option value="keyboard">자리연습(이전)</option>
                     </select>
                     <select id="chart-lang-filter" class="input-field" style="padding:8px 14px;width:auto"
                         onchange="updateChart()">
@@ -173,7 +175,14 @@
             keys_100000: { icon: '👑', name: '10만 타' },
         };
 
-        const MODE_LABEL = { keyboard: '자리연습', word: '단어', sentence: '문장', paragraph: '문단' };
+        const MODE_LABEL = {
+            keyboard_basic: '자리연습(기초)',
+            keyboard_word: '자리연습(단어)',
+            keyboard: '자리연습(이전)',
+            word: '단어',
+            sentence: '문장',
+            paragraph: '문단'
+        };
         const LANG_LABEL = { ko: '🇰🇷 한글', en: '🇺🇸 영문' };
 
         let allRecords = [];
@@ -329,7 +338,7 @@
 
             // 모드별
             const modeEl = document.getElementById('mode-stats');
-            ['keyboard', 'word', 'sentence', 'paragraph'].forEach(mode => {
+            ['keyboard_basic', 'keyboard_word', 'word', 'sentence', 'paragraph', 'keyboard'].forEach(mode => {
                 const recs = allRecords.filter(r => r.mode === mode);
                 if (!recs.length) return;
                 const avgWpm = avg(recs.map(r => r.wpm || 0)).toFixed(0);
