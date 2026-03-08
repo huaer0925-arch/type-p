@@ -28,14 +28,46 @@ const Records = (() => {
         return record;
     }
 
-    // 개인 기록 최근 N개 조회
-    async function getMyRecords(uid, limit = 20) {
-        const snap = await db.collection('users').doc(uid)
+    // 개인 기록 최근 N개 조회 (연습 + 버블슈터 통합)
+    async function getMyRecords(uid, limit = 50) {
+        // 1. 일반 연습 기록 가져오기
+        const recordsSnap = await db.collection('users').doc(uid)
             .collection('records')
             .orderBy('createdAt', 'desc')
             .limit(limit)
             .get();
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const records = recordsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // 2. 버블 슈터 기록 가져오기
+        const bubbleSnap = await db.collection('users').doc(uid)
+            .collection('bubbleRecords')
+            .orderBy('createdAt', 'desc')
+            .limit(limit)
+            .get();
+
+        // 버블 슈터 기록 정규화 (일반 기록 형식과 맞춤)
+        const bubbleRecords = bubbleSnap.docs.map(d => {
+            const data = d.data();
+            return {
+                id: d.id,
+                ...data,
+                mode: 'bubble',            // 모드 명시
+                wpm: data.wpmAvg || 0,     // 평균 타수를 wpm으로 매핑
+                accuracy: data.accuracy || 0,
+                duration: data.duration || 0,
+                lang: data.lang || 'ko',
+            };
+        });
+
+        // 3. 통합 및 정렬
+        const all = [...records, ...bubbleRecords]
+            .sort((a, b) => {
+                const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+                const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+                return timeB - timeA;
+            });
+
+        return all.slice(0, limit);
     }
 
     // 학반 랭킹 (상위 5명, WPM 최고 기록)

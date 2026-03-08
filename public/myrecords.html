@@ -81,6 +81,7 @@
                         <option value="word">단어</option>
                         <option value="sentence">문장</option>
                         <option value="paragraph">문단</option>
+                        <option value="bubble">버블 슈터</option>
                         <option value="keyboard">자리연습(이전)</option>
                     </select>
                     <select id="chart-lang-filter" class="input-field" style="padding:8px 14px;width:auto"
@@ -181,7 +182,8 @@
             keyboard: '자리연습(이전)',
             word: '단어',
             sentence: '문장',
-            paragraph: '문단'
+            paragraph: '문단',
+            bubble: '버블 슈터'
         };
         const LANG_LABEL = { ko: '🇰🇷 한글', en: '🇺🇸 영문' };
 
@@ -338,7 +340,7 @@
 
             // 모드별
             const modeEl = document.getElementById('mode-stats');
-            ['keyboard_basic', 'keyboard_word', 'word', 'sentence', 'paragraph', 'keyboard'].forEach(mode => {
+            ['keyboard_basic', 'keyboard_word', 'word', 'sentence', 'paragraph', 'bubble', 'keyboard'].forEach(mode => {
                 const recs = allRecords.filter(r => r.mode === mode);
                 if (!recs.length) return;
                 const avgWpm = avg(recs.map(r => r.wpm || 0)).toFixed(0);
